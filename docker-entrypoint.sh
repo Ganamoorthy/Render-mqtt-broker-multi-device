@@ -34,7 +34,7 @@ if [ -s "$PWFILE" ]; then
 # Case B: Credentials supplied via Render Environment Variables
 elif [ -n "$MQTT_DEVICES" ] || [ -n "$MQTT_USERNAME" ]; then
     echo "--> Generating pwfile from environment variables..."
-    touch "$PWFILE"
+    rm -f "$PWFILE" "$PWFILE.tmp"
 
     # Single admin / device user via MQTT_USERNAME and MQTT_PASSWORD
     if [ -n "$MQTT_USERNAME" ] && [ -n "$MQTT_PASSWORD" ]; then
@@ -45,7 +45,6 @@ elif [ -n "$MQTT_DEVICES" ] || [ -n "$MQTT_USERNAME" ]; then
     # Multiple devices via MQTT_DEVICES="dev1:pass1,dev2:pass2,admin:adminpass"
     if [ -n "$MQTT_DEVICES" ]; then
         echo "--> Registering device credentials from MQTT_DEVICES list..."
-        # Set comma as delimiter
         OLD_IFS="$IFS"
         IFS=","
         for device_entry in $MQTT_DEVICES; do
@@ -54,7 +53,7 @@ elif [ -n "$MQTT_DEVICES" ] || [ -n "$MQTT_USERNAME" ]; then
             p=$(echo "$device_entry" | cut -d: -f2- | tr -d '[:space:]')
             if [ -n "$u" ] && [ -n "$p" ]; then
                 echo "    + Added device: $u"
-                if [ ! -f "$PWFILE" ] || [ ! -s "$PWFILE" ]; then
+                if [ ! -f "$PWFILE" ]; then
                     mosquitto_passwd -b -c "$PWFILE" "$u" "$p"
                 else
                     mosquitto_passwd -b "$PWFILE" "$u" "$p"
@@ -77,6 +76,7 @@ else
     echo " [SECURITY ADVICE] Configure MQTT_DEVICES in Render Dashboard or"
     echo " supply a custom pwfile to secure your broker for production!"
     echo "======================================================================"
+    rm -f "$PWFILE" "$PWFILE.tmp"
     mosquitto_passwd -b -c "$PWFILE" "admin" "admin_changeme"
     mosquitto_passwd -b "$PWFILE" "esp32_device_01" "device_changeme"
 fi
