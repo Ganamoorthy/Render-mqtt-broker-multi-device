@@ -1,0 +1,51 @@
+# ==============================================================================
+# Mosquitto Access Control List (ACL)
+# Multi-Device IoT Isolation Architecture
+# ==============================================================================
+# This file governs publish and subscribe permissions across all connected
+# devices and applications.
+#
+# Topic Convention:
+#   - Telemetry:  devices/<deviceId>/telemetry
+#   - Status:     devices/<deviceId>/status
+#   - Commands:   devices/<deviceId>/command
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Device Topic Restrictions using Placeholders:
+#    %u = Username of the connected client (Matches Device ID)
+#    %c = Client ID of the connected client
+# ------------------------------------------------------------------------------
+
+# Devices can publish their own telemetry metrics
+pattern write devices/%u/telemetry
+pattern write devices/%u/telemetry/#
+
+# Devices can publish their lifecycle/online status & Last Will and Testament (LWT)
+pattern write devices/%u/status
+pattern write devices/%u/status/#
+pattern write devices/%u/lwt
+
+# Devices can only listen to commands sent specifically to their Device ID
+pattern read devices/%u/command
+pattern read devices/%u/command/#
+
+# ------------------------------------------------------------------------------
+# 2. Administrative and Dashboard Access
+# ------------------------------------------------------------------------------
+
+# Admin user: Full read/write access across all devices and system metrics
+user admin
+topic readwrite devices/#
+topic read $SYS/#
+
+# Dashboard user: Read all device telemetry and status; publish commands
+user dashboard
+topic read devices/+/telemetry
+topic read devices/+/telemetry/#
+topic read devices/+/status
+topic read devices/+/status/#
+topic read devices/+/lwt
+topic write devices/+/command
+topic write devices/+/command/#
+topic read $SYS/#
